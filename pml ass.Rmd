@@ -1,0 +1,85 @@
+---
+title: "Machine Learning Assignment"
+author: "Thomas Kliem"
+date: "20 June 2015"
+output: html_document
+---
+
+Read in the data sets.
+
+```{r}
+
+library(caret)
+train <- read.csv("pml-training.csv")
+test <- read.csv("pml-testing.csv")
+
+```
+
+Define a function to tidy the training data, which will also be run on the test data. The split the training data into training and test sets.
+
+Note, in this assignment, the "test" data is for submission only. The training set will be split into a training and CV set, which will be used to check the model.
+
+
+
+```{r}
+tidydata <- function(dataset){
+  temp <- !(is.na(dataset[1,]) | dataset[1,] == "")
+  temp <- dataset[,temp]
+  temp <- temp[(temp$new_window=="no"),]
+  temp <- temp[,c(-1,-2,-3,-4,-5,-6,-7)]
+  return(temp)
+}
+
+head(train)
+
+tidy.data <- tidydata(train)
+tidy.test <- tidydata(test)
+
+split <- createDataPartition(y=tidy.data$class,p=0.75,list=FALSE)
+tidy.train <- tidy.data[split,]
+tidy.CV <- tidy.data[-split,]
+
+```
+
+Define how the model will run with 5 fold cross-validation, and build the model using the caret random forests algorithm.
+
+```{r}
+
+train_control <- trainControl(method="cv",5)
+modelrf <- train(classe ~., data=tidy.train, trControl=train_control,method="rf")
+```
+
+The model has an estimated error rate of 0.6%
+
+Check the accuracy of the model using the CV test set.
+```{r}
+pr <- predict(modelrf,newdata=tidy.CV)
+
+confusionMatrix(tidy.CV$classe,pr)
+```
+
+This is good.
+
+
+
+
+Use the test examples and submit for grading.
+
+```{r}
+
+test.pr <- predict(modelrf,newdata=tidy.test)
+
+
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+
+pml_write_files(test.pr)
+
+
+
+```
