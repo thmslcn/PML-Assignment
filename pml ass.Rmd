@@ -30,7 +30,6 @@ tidydata <- function(dataset){
   return(temp)
 }
 
-head(train)
 
 tidy.data <- tidydata(train)
 tidy.test <- tidydata(test)
